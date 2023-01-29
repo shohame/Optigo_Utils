@@ -32,7 +32,7 @@ class XVI_Reader:
 
     def ReadFrame(self, FrameIdx, with_annotation=True):
 
-        self.hFile.seek(XVI_HEADER_SIZE + FrameIdx * self.header.frame_size)
+        self.hFile.seek(XVI_HEADER_SIZE + np.int64(FrameIdx) * self.header.frame_size)
 
         frm = self.hFile.read(self.header.frame_size)
         if (self.header.bits_count == 8):
@@ -65,7 +65,7 @@ class XVI_Reader:
         return header
 
     def _read_time_tags(self):
-        self.hFile.seek(XVI_HEADER_SIZE + self.header.frame_count * self.header.frame_size)
+        self.hFile.seek(XVI_HEADER_SIZE + np.int64(self.header.frame_count) * self.header.frame_size)
         TimeTags = sTimeTags()
         TimeTags.Marker = int.from_bytes(self.hFile.read(4), "little")
 
@@ -80,6 +80,6 @@ class XVI_Reader:
 
         tt = self.hFile.read(4 * self.header.frame_count)
 
-        TimeTags.deltaFromFirstFrame = unpack(f'<{self.header.frame_count}I', tt)
+        TimeTags.deltaFromFirstFrame = list(unpack(f'<{self.header.frame_count}I', tt))
         return TimeTags
 
