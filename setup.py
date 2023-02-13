@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='OptigoUtils',
-      version='1.2',
+      version='1.3',
       author='P.S',
       author_email='a85571@alta.iai',
       url='#',
