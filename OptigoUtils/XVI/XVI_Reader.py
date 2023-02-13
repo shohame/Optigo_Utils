@@ -59,6 +59,11 @@ class XVI_Reader:
         (header.major_version, header.minor_version, header.frame_size, header.bits_count,
          header.width, header.height, header.frame_rate, header.frame_count) = i_header
 
+        calculated_frame_count = int((self.file_size - 1024)/(header.width*header.height*ceil(header.bits_count/8)))
+        if calculated_frame_count != header.frame_count:
+            print("\033[1;91m-- WARNING: Calculated Frame Count is {}, while Frame Count in header is {}".format(calculated_frame_count, header.frame_count))
+            print("\033[1;0m\n")
+
         self.hFile.seek(XVI_HEADER_REMARKS_POS)
         b_remarks = self.hFile.read(XVI_HEADER_SIZE - XVI_HEADER_REMARKS_POS)
         header.remarks = b_remarks.split(b'\x00')[0].decode('utf-8')
