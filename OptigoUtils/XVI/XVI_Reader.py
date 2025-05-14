@@ -1,8 +1,9 @@
 import numpy as np
-from struct import unpack
 import os
-from .XVI_Globals import *
-
+from .XVI_Header import *
+from .XVI_Header import XVI_Header
+from .XVI_TimeTags import XVI_TimeTags
+from struct import unpack
 
 def Read_XVI_Header(xvi_file_name):
     h_xviHeader = XVI_Reader(xvi_file_name)
@@ -13,10 +14,10 @@ def Read_XVI_Header(xvi_file_name):
 class XVI_Reader:
     def __init__(self, file_name):
         self.file_name = file_name
-        self.file_size = os.path.getsize(self.file_name)
+        file_size = os.path.getsize(self.file_name)
         self.hFile = open(self.file_name, "rb")
-        self.header = self._read_header()
-        self.TimeTags = self._read_time_tags()
+        self.header = XVI_Header(self.hFile, file_size)
+        self.TimeTags = XVI_TimeTags(self.hFile, self.header.frame_count, self.header.frame_size)
 
     def GetHeader(self):
         return self.header
@@ -31,60 +32,39 @@ class XVI_Reader:
         return self.header.frame_count
 
     def ReadFrame(self, FrameIdx, with_annotation=True):
-
-        self.hFile.seek(XVI_HEADER_SIZE + np.int64(FrameIdx) * self.header.frame_size)
-
-        frm = self.hFile.read(self.header.frame_size)
-        if (self.header.bits_count == 8):
-            frm = unpack('B' * (len(frm)), frm)
-        elif (self.header.bits_count > 8 and self.header.bits_count <= 16):
-            frm = unpack('h' * (len(frm) // 2), frm)
-        else:
-            assert False, "Unsupported bits size."
         try:
-            frm = np.reshape(frm, [self.header.height, self.header.width])
-        except:
+            # Seek to the correct position in the file
+            self.hFile.seek(XVI_HEADER_SIZE + np.int64(FrameIdx) * self.header.frame_size)
+
+            # Read the frame data
+            frm = self.hFile.read(self.header.frame_size)
+            if not frm:
+                raise ValueError("Failed to read frame data from file.")
+
+            # Unpack the frame data based on the bit depth
+            if self.header.bits_count == 8:
+                frm = np.frombuffer(frm, dtype=np.uint8)
+            elif 8 < self.header.bits_count <= 16:
+                frm = np.frombuffer(frm, dtype=np.int16)
+            else:
+                raise ValueError(f"Unsupported bits size: {self.header.bits_count}")
+
+            # Reshape the frame data into a 2D array
+            expected_size = self.header.height * self.header.width
+            if len(frm) != expected_size:
+                raise ValueError(f"Frame data size mismatch: expected {expected_size}, got {len(frm)}")
+
+            frm = frm.reshape(self.header.height, self.header.width)
+
+            # Optionally remove the last row if annotations are not needed
+            if not with_annotation:
+                frm = frm[:-1, :]
+
+            return frm
+
+        except Exception as e:
+            print(f"An error occurred while reading frame {FrameIdx}: {e}")
             return None
-        if (with_annotation == False):
-            frm = frm[:-1, :]
-        return (frm)
 
-    def _read_header(self):
-        header = sHeader()
-        self.hFile.seek(0)
-        b_header = self.hFile.read(4 * 8)
 
-        i_header = unpack('<8I', b_header)
-
-        (header.major_version, header.minor_version, header.frame_size, header.bits_count,
-         header.width, header.height, header.frame_rate, header.frame_count) = i_header
-
-        calculated_frame_count = int((self.file_size - 1024)/(header.width*header.height * np.ceil(header.bits_count/8)))
-        if calculated_frame_count != header.frame_count:
-            print("\033[1;91m-- WARNING: Calculated Frame Count is {}, while Frame Count in header is {}".format(calculated_frame_count, header.frame_count))
-            print("\033[1;0m\n")
-
-        self.hFile.seek(XVI_HEADER_REMARKS_POS)
-        b_remarks = self.hFile.read(XVI_HEADER_SIZE - XVI_HEADER_REMARKS_POS)
-        header.remarks = b_remarks.split(b'\x00')[0].decode('utf-8')
-        return header
-
-    def _read_time_tags(self):
-        self.hFile.seek(XVI_HEADER_SIZE + np.int64(self.header.frame_count) * self.header.frame_size)
-        TimeTags = sTimeTags()
-        TimeTags.Marker = int.from_bytes(self.hFile.read(4), "little")
-
-        if TT_MARKER_Idnt != TimeTags.Marker:
-            return []
-
-        b_tt = self.hFile.read(4 * 7)
-        i_ii = unpack('<7I', b_tt)
-
-        (TimeTags.Year, TimeTags.Month, TimeTags.Day,
-         TimeTags.Hour, TimeTags.Min, TimeTags.Second, TimeTags.MiliSec) = i_ii
-
-        tt = self.hFile.read(4 * self.header.frame_count)
-
-        TimeTags.deltaFromFirstFrame = list(unpack(f'<{self.header.frame_count}I', tt))
-        return TimeTags
 

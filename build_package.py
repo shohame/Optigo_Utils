@@ -9,7 +9,7 @@ package_name = 'OptigoUtils'
 
 out_path = Path(out_path_str)
 if out_path.exists():
-    shutil.rmtree(out_path)
+    shutil.rmtree(out_path, ignore_errors=True)
 
 cmd_str = f'python setup.py build --build-base {out_path_str} ' + \
           f'egg_info --egg-base {out_path_str} ' + \

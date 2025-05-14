@@ -1,4 +1,4 @@
-from .XVI_Globals import *
+from .XVI_Header import *
 from .XVI_Reader import XVI_Reader
 from .XVI_Writer import XVI_Writer
 
