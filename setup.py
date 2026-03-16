@@ -7,7 +7,7 @@ setup(name='OptigoUtils',
       url='#',
       description="Optigo Utils.",
 
-      packages=['OptigoUtils', 'OptigoUtils/XVI', 'OptigoUtils/opptx'],
+      packages=['OptigoUtils', 'OptigoUtils/XVI'],
 
       package_data={'': ['**/*.json']},
       zip_safe=False)
