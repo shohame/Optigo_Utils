@@ -1,0 +1,36 @@
+
+{
+    "text_lines":
+    [
+        {
+        "font":
+            {
+                "size": 24,
+                "name": "David",
+                "underline": 1,
+                "alignment": "center"
+            }
+        },
+        {
+            "font": {
+                "size": 16,
+                "name": "David",
+                "underline": 0,
+                "alignment": "left"
+            }
+        },
+        {
+            "font": {
+                "size": 16,
+                "name": "David",
+                "underline": 0,
+                 "alignment": "left"
+           }
+        }
+    ],
+    "images":
+    {
+        "partition_x": [2,2,1],
+        "partition_y": [1,3,5,1]
+    }
+}

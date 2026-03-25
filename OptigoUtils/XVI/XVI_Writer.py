@@ -18,14 +18,24 @@ class XVI_Writer:
 
     def WriteFrame(self, I):
         N = self._header.height * self._header.width
-        I2 = np.reshape(I, N)
-        if (self._header.bits_count == 8):
-            f_str = pack('B' * N, *I2)
-        elif (self._header.bits_count > 8 and self._header.bits_count <= 16):
-            f_str = pack('h' * N, *I2)
+        if I.size != N:
+            raise ValueError(f"Expected {N} pixels, got {I.size}")
+
+        if self._header.bits_count == 8:
+            arr = np.asarray(I, dtype=np.uint8)  # unsigned 8-bit
+        elif 8 < self._header.bits_count <= 16:
+            arr = np.asarray(I, dtype=np.int16)  # signed 16-bit (matches 'h')
+            # If your file format expects little-endian explicitly:
+            # arr = arr.astype('<i2', copy=False)
         else:
-            assert False, "Unsupported bits size."
-        self._h_file.write(f_str)
+            raise ValueError("Unsupported bits size.")
+
+        # Ensure 1D C-contiguous view without copying if already contiguous
+        if not arr.flags['C_CONTIGUOUS'] or arr.ndim != 1:
+            arr = np.ascontiguousarray(arr.reshape(-1))
+
+        # Fast path: write raw bytes directly
+        self._h_file.write(arr.tobytes())
         self._number_of_frames += 1
 
     def Close(self):
